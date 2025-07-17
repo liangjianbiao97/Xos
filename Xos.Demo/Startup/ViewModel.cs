@@ -1,18 +1,7 @@
-using System;
-using System.Collections.Generic;
-using Xos.Module;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Xos.Demo.Startup;
 
-public class ViewModel : ViewModelBase
+public class ViewModel : ObservableObject
 {
-    public override void GetSettings(Dictionary<string, string> settings)
-    {
-        throw new NotImplementedException();
-    }
-
-    public override void ApplySetting(Dictionary<string, string> settings)
-    {
-        throw new NotImplementedException();
-    }
 }

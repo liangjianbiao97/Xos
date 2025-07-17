@@ -8,9 +8,11 @@ namespace Xos.Demo;
 
 public class App : XosApplication
 {
+    
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        
     }
 
     protected override void ConfigureViews(ModuleLoader moduleloader)

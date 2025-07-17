@@ -16,7 +16,13 @@ public class XView : ContentControl
 
     #region Properties
 
-    public int Level => _permission.Level;
+    public string ViewName;
+
+    public int Level
+    {
+        get => _permission.Level;
+        set => _permission.Level = value;
+    }
 
     public double X
     {
@@ -44,7 +50,7 @@ public class XView : ContentControl
         set
         {
             _contour.Z = value;
-            Canvas.SetTop(this, value);
+            
         }
     }
 
@@ -75,6 +81,7 @@ public class XView : ContentControl
         if (viewInfo.ViewName == null || viewInfo.GetView == null) throw new ArgumentNullException();
         var view = viewInfo.GetView.Invoke();
         _viewModel = view.DataContext as ViewModelBase ?? throw new ArgumentNullException();
+        ViewName = viewInfo.ViewName;
         Content = view;
         X = position.X;
         Y = position.Y;
@@ -96,7 +103,13 @@ public class XView : ContentControl
     internal void ApplySettings(Dictionary<string, string> settings)
     {
         _contour = JsonConvert.DeserializeObject<Contour>(settings["轮廓"]);
+        X = _contour.X;
+        Y = _contour.Y;
+        Z = _contour.Z;
+        W = _contour.Width;
+        H = _contour.Height;
         _permission = JsonConvert.DeserializeObject<Permission>(settings["安全"]);
-        _viewModel.GetSettings(settings);
+        Level = _permission.Level;
+        _viewModel.ApplySetting(settings);
     }
 }

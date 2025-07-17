@@ -44,7 +44,7 @@ static class PackageZipper
 
         try
         {
-            byte[] textBytes = Encoding.UTF8.GetBytes(text);
+            byte[] textBytes = CompressStringToBytes(text);
             long totalBytes = textBytes.Length;
             long processedBytes = 0;
 
@@ -138,7 +138,7 @@ static class PackageZipper
                 progressCallback?.Invoke(progress);
             }
 
-            return Encoding.UTF8.GetString(decompressedStream.ToArray());
+            return DecompressStringFromBytes(decompressedStream.ToArray());
         }
     }
 
@@ -151,7 +151,7 @@ static class PackageZipper
     /// <param name="cancellationToken">取消令牌</param>
     /// <param name="bufferSize">缓冲区大小 (可选)</param>
     /// <returns>压缩后的字节数组</returns>
-    public static byte[] CompressStringToBytes(
+    private static byte[] CompressStringToBytes(
         string text,
         CompressionLevel compressionLevel = CompressionLevel.Optimal,
         Action<double>? progressCallback = null,
@@ -202,7 +202,7 @@ static class PackageZipper
     /// <param name="cancellationToken">取消令牌</param>
     /// <param name="bufferSize">缓冲区大小 (可选)</param>
     /// <returns>解压后的字符串</returns>
-    public static string DecompressStringFromBytes(
+    private static string DecompressStringFromBytes(
         byte[] compressedData,
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default,
@@ -238,68 +238,6 @@ static class PackageZipper
 
             return Encoding.UTF8.GetString(decompressedStream.ToArray());
         }
-    }
-
-    /// <summary>
-    /// 估算压缩后的文件大小
-    /// </summary>
-    /// <param name="text">原始文本</param>
-    /// <param name="compressionLevel">压缩级别</param>
-    /// <returns>预估的压缩大小</returns>
-    public static long EstimateCompressedSize(string text, CompressionLevel compressionLevel = CompressionLevel.Optimal)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return 0;
-
-        // 简单估算：压缩率通常在 60-90% 之间
-        double compressionRatio = compressionLevel switch
-        {
-            CompressionLevel.Fastest => 0.7, // 30% 压缩率
-            CompressionLevel.Optimal => 0.5, // 50% 压缩率
-            CompressionLevel.SmallestSize => 0.4, // 60% 压缩率
-            _ => 0.5
-        };
-
-        long originalSize = Encoding.UTF8.GetByteCount(text);
-        return (long)(originalSize * compressionRatio);
-    }
-
-    /// <summary>
-    /// 获取压缩文件信息
-    /// </summary>
-    /// <param name="filePath">压缩文件路径</param>
-    /// <returns>文件信息对象</returns>
-    public static CompressionFileInfo GetFileInfo(string filePath)
-    {
-        if (!File.Exists(filePath))
-            throw new FileNotFoundException("文件不存在", filePath);
-
-        var fileInfo = new FileInfo(filePath);
-
-        // 尝试获取原始大小
-        long originalSize = 0;
-        try
-        {
-            using (var stream = new FileStream(filePath, FileMode.Open))
-            {
-                // GZip 格式在最后4个字节存储原始大小
-                stream.Seek(-4, SeekOrigin.End);
-                var sizeBuffer = new byte[4];
-                stream.Read(sizeBuffer, 0, 4);
-                originalSize = BitConverter.ToInt32(sizeBuffer, 0);
-            }
-        }
-        catch
-        {
-            // 如果无法获取，使用默认值
-            originalSize = 0;
-        }
-
-        return new CompressionFileInfo(
-            filePath: filePath,
-            compressedSize: fileInfo.Length,
-            originalSize: originalSize,
-            created: fileInfo.CreationTimeUtc,
-            modified: fileInfo.LastWriteTimeUtc);
     }
 }
 
@@ -346,59 +284,7 @@ public class CompressionResult
 
     private static string FormatBytes(long bytes)
     {
-        string[] sizes = { "B", "KB", "MB", "GB" };
-        double len = bytes;
-        int order = 0;
-
-        while (len >= 1024 && order < sizes.Length - 1)
-        {
-            order++;
-            len /= 1024;
-        }
-
-        return $"{len:0.##} {sizes[order]}";
-    }
-}
-
-/// <summary>
-/// 压缩文件信息
-/// </summary>
-public class CompressionFileInfo
-{
-    public string FilePath { get; }
-    public long CompressedSize { get; }
-    public long OriginalSize { get; }
-    public DateTime Created { get; }
-    public DateTime Modified { get; }
-
-    public double CompressionRatio =>
-        OriginalSize > 0 ? (double)CompressedSize / OriginalSize * 100 : 0;
-
-    public CompressionFileInfo(
-        string filePath,
-        long compressedSize,
-        long originalSize,
-        DateTime created,
-        DateTime modified)
-    {
-        FilePath = filePath;
-        CompressedSize = compressedSize;
-        OriginalSize = originalSize;
-        Created = created;
-        Modified = modified;
-    }
-
-    public override string ToString()
-    {
-        return $"文件: {Path.GetFileName(FilePath)} | " +
-               $"压缩率: {CompressionRatio:F1}% | " +
-               $"原始大小: {FormatBytes(OriginalSize)} | " +
-               $"压缩后: {FormatBytes(CompressedSize)}";
-    }
-
-    private static string FormatBytes(long bytes)
-    {
-        string[] sizes = { "B", "KB", "MB", "GB" };
+        string[] sizes = ["B", "KB", "MB", "GB"];
         double len = bytes;
         int order = 0;
 

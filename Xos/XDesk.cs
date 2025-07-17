@@ -9,6 +9,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Xos.Component;
 using Xos.Operation;
+using Xos.Service.ApplicationPackage;
 
 namespace Xos;
 
@@ -98,7 +99,8 @@ public class XDesk : Canvas
         Background = Brushes.Transparent;
         ClipToBounds = true;
         Focusable = true;
-        RenderTransformOrigin = new RelativePoint(0, 0, RelativeUnit.Relative);
+        
+        RenderTransformOrigin = new RelativePoint(0, 0, RelativeUnit.Absolute);
         RenderTransform = _scale;
         
         // 创建变换组合
@@ -108,13 +110,13 @@ public class XDesk : Canvas
         RenderTransform = transformGroup;
 
         // 组件初始化
-        _suggsetBox = new(this);
-        _gridLine = new(this);
-        _selectingBox = new(this);
-        _selectedBox = new(this);
-        _previewBox = new(this);
-        _toolbar = new(this);
-
+        _suggsetBox = new SuggestBox(this);
+        _gridLine = new GridLine(this);
+        _selectingBox = new SelectingBox(this);
+        _selectedBox = new SelectedBox(this);
+        _previewBox = new PreviewBox(this);
+        _toolbar = new AlignmentToolbar(this);
+        
         // 事件绑定
         PointerPressed += OnMouseLeftButtonDown;
         PointerMoved += OnMouseMove;
@@ -123,9 +125,9 @@ public class XDesk : Canvas
         PointerWheelChanged += OnWheelChanged;
         
         //package
-        package = new XPackage(this,"XViews");
-        var a = new XPackage(this,"XViews");
-        
+        var pkg = XosApplication.Current?.Provider
+            .GetRequiredKeyedService(typeof(IPackage),"XPackage") as IPackage;
+        pkg?.FillTo(this);
 
         // 初始化更新计时器
         _updateTimer = new DispatcherTimer
